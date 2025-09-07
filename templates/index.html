@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Automation Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Modern Color Palette */
+            --primary: #ff6b35;
+            --primary-dark: #e55a2b;
+            --primary-light: #ff8563;
+            --secondary: #1a1d29;
+            --secondary-light: #2a2f3d;
+            --accent: #00d4aa;
+            --accent-dark: #00b894;
+            --background: #0f1116;
+            --surface: #1e2328;
+            --surface-light: #2a2f3d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a4b8;
+            --text-muted: #6c7293;
+            --border: #323743;
+            --success: #00d084;
+            --warning: #ffb800;
+            --error: #ff4757;
+            --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #00d084 0%, #00d4aa 100%);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.2);
+            --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 212, 170, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 8px 0;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s infinite;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Channel Info Card */
+        .channel-info {
+            background: var(--surface-light);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            display: none;
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.6s ease;
+        }
+
+        .channel-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+        }
+
+        .channel-info.active {
+            display: block;
+        }
+
+        .channel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .channel-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .channel-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .channel-details h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .channel-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .channel-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Navigation Menu */
+        .nav-menu {
+            list-style: none;
+            margin-bottom: 24px;
+        }
+
+        .nav-item {
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: left 0.3s ease;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .nav-link:hover::before,
+        .nav-link.active::before {
+            left: 0;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-primary);
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            transform: translateX(4px);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            color: var(--error);
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 71, 87, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            grid-column: 2;
+            padding: 32px;
+            position: relative;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* Glass Card Effect */
+        .glass-card {
+            background: rgba(30, 35, 40, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.6s ease;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.5), transparent);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Modern Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            outline: none;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Progress Section */
+        .progress-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            display: none;
+            animation: slideInUp 0.6s ease;
+        }
+
+        .progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .progress-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-percentage {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .progress-bar-container {
+            background: var(--surface-light);
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-steps {
+            display: grid;
+            gap: 16px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--surface-light);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+
+        .step-item.active {
+            opacity: 1;
+            background: rgba(255, 107, 53, 0.1);
+            border-color: var(--primary);
+            transform: translateX(8px);
+        }
+
+        .step-item.completed {
+            opacity: 0.8;
+            background: rgba(0, 208, 132, 0.1);
+            border-color: var(--success);
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: var(--border);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .step-item.active .step-icon {
+            background: var(--gradient-primary);
+            color: white;
+            animation: bounce 0.6s ease;
+        }
+
+        .step-item.completed .step-icon {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 60%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            80% { transform: translateY(-5px); }
+        }
+
+        .step-content h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Results Card */
+        .result-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 32px;
+            margin-top: 24px;
+            border: 1px solid var(--border);
+            animation: slideInUp 0.6s ease;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .result-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: var(--gradient-success);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .result-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Metadata Display */
+        .metadata-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .metadata-item {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .metadata-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .metadata-value {
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 6px 12px;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        /* Alerts */
+        .alerts-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: slideInRight 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: currentColor;
+        }
+
+        .alert-success {
+            background: rgba(0, 208, 132, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(255, 71, 87, 0.1);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Login Panel */
+        .login-panel {
+            display: none;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .login-panel.active {
+            display: block;
+        }
+
+        .login-icon {
+            font-size: 80px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 17, 22, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loader-content {
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                grid-column: 1;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .page-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader Overlay -->
+    <div id="loader" class="loader-overlay">
+        <div class="loader-content">
+            <div class="loader"></div>
+            <div id="loaderText" class="loader-text">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Alerts Container -->
+    <div id="alerts" class="alerts-container"></div>
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fas fa-play-circle logo-icon"></i>
+                <h1>YouTube AI Studio</h1>
+            </div>
+
+            <!-- Channel Info Card -->
+            <div id="channelInfo" class="channel-info">
+                <div class="channel-header">
+                    <img id="channelAvatar" class="channel-avatar" src="https://via.placeholder.com/56" alt="Channel">
+                    <div class="channel-details">
+                        <h3 id="channelName">Channel Name</h3>
+                        <div class="channel-status">
+                            <div class="status-dot"></div>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="channel-stats">
+                    <div class="stat-item">
+                        <span id="subscriberCount" class="stat-number">0</span>
+                        <span class="stat-label">Subscribers</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="videoCount" class="stat-number">0</span>
+                        <span class="stat-label">Videos</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" onclick="showPanel('uploadPanel')">
+                        <i class="fas fa-cloud-upload-alt nav-icon"></i>
+                        <span>Upload Content</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showPanel('historyPanel')">
+                        <i class="fas fa-history nav-icon"></i>
+                        <span>Upload History</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showPanel('settingsPanel')">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showPanel('analyticsPanel')">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">YouTube Automation Studio</h1>
+                <p class="page-subtitle">Transform Instagram content into engaging YouTube videos with AI</p>
+            </div>
+
+            <!-- Login Panel -->
+            <div id="loginPanel" class="login-panel glass-card">
+                <div class="login-icon">
+                    <i class="fab fa-youtube"></i>
+                </div>
+                <h2 class="login-title">Connect Your YouTube Channel</h2>
+                <p class="login-subtitle">
+                    Get started by connecting your YouTube channel to enable automatic video uploads with AI-generated content.
+                </p>
+                <button class="btn btn-primary" onclick="authenticate()">
+                    <i class="fas fa-link"></i>
+                    <span>Connect YouTube Channel</span>
+                </button>
+            </div>
+
+            <!-- Upload Panel -->
+            <div id="uploadPanel" class="content-panel" style="display: none;">
+                <div class="glass-card">
+                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">
+                        <i class="fas fa-magic" style="color: var(--primary); margin-right: 12px;"></i>
+                        AI-Powered Content Upload
+                    </h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 32px;">
+                        Paste your Instagram reel URL and let our AI create engaging YouTube content for you.
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fab fa-instagram" style="margin-right: 8px;"></i>
+                            Instagram Reel URL
+                        </label>
+                        <input 
+                            type="url" 
+                            id="reelUrl" 
+                            class="form-input" 
+                            placeholder="https://www.instagram.com/reel/..."
+                        >
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="generatePreview()">
+                            <i class="fas fa-eye"></i>
+                            <span>Preview AI Content</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadOnly()">
+                            <i class="fas fa-download"></i>
+                            <span>Download Only</span>
+                        </button>
+                        <button id="autoUploadBtn" class="btn btn-primary" onclick="autoUploadBackground()">
+                            <i class="fas fa-rocket"></i>
+                            <span>Upload to YouTube</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div id="progressSection" class="progress-card">
+                    <div class="progress-header">
+                        <h3 class="progress-title">
+                            <i class="fas fa-tasks" style="margin-right: 12px; color: var(--primary);"></i>
+                            Upload Progress
+                        </h3>
+                        <span id="progressPercentage" class="progress-percentage">0%</span>
+                    </div>
+                    
+                    <div class="progress-bar-container">
+                        <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+
+                    <div id="progressSteps" class="progress-steps">
+                        <div class="step-item" id="step-started">
+                            <div class="step-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>Initializing</h4>
+                                <p>Starting the upload process</p>
+                            </div>
+                        </div>
+                        <div class="step-item" id="step-downloading">
+                            <div class="step-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>Downloading Content</h4>
+                                <p>Fetching reel from Instagram</p>
+                            </div>
+                        </div>
+                        <div class="step-item" id="step-generating_metadata">
+                            <div class="step-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>AI Content Generation</h4>
+                                <p>Creating title, description, and tags</p>
+                            </div>
+                        </div>
+                        <div class="step-item" id="step-uploading">
+                            <div class="step-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>Uploading to YouTube</h4>
+                                <p>Publishing to <span id="uploadChannelName">your channel</span></p>
+                            </div>
+                        </div>
+                        <div class="step-item" id="step-completed">
+                            <div class="step-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>Upload Complete</h4>
+                                <p>Video successfully published</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="resultContainer"></div>
+            </div>
+
+            <!-- History Panel -->
+            <div id="historyPanel" class="content-panel" style="display: none;">
+                <div class="glass-card">
+                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">
+                        <i class="fas fa-history" style="color: var(--primary); margin-right: 12px;"></i>
+                        Upload History
+                    </h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 24px;">
+                        Track your recent uploads and their performance
+                    </p>
+                    <div id="historyItems"></div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div id="settingsPanel" class="content-panel" style="display: none;">
+                <div class="glass-card">
+                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">
+                        <i class="fas fa-cog" style="color: var(--primary); margin-right: 12px;"></i>
+                        Settings & Preferences
+                    </h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 32px;">
+                        Customize your upload preferences and AI behavior
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label">Default Privacy Setting</label>
+                        <select id="defaultPrivacy" class="form-input">
+                            <option value="private">Private</option>
+                            <option value="unlisted" selected>Unlisted</option>
+                            <option value="public">Public</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Default Category</label>
+                        <select id="defaultCategory" class="form-input">
+                            <option value="22" selected>People & Blogs</option>
+                            <option value="24">Entertainment</option>
+                            <option value="23">Comedy</option>
+                            <option value="26">Howto & Style</option>
+                            <option value="10">Music</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">AI Content Instructions</label>
+                        <textarea 
+                            id="aiCustomization" 
+                            class="form-input" 
+                            rows="4"
+                            placeholder="Provide specific instructions for AI content generation..."
+                        ></textarea>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i>
+                        <span>Save Settings</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let currentTaskId = null;
+        let statusCheckInterval = null;
+        let uploadHistory = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
+        
+        // Initialize application
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuthenticationStatus();
+            loadSettings();
+            renderUploadHistory();
+        });
+        
+        // Channel info and authentication
+        async function checkAuthenticationStatus() {
+            showLoader('Checking authentication...');
+            
+            try {
+                const authResponse = await fetch('/check-auth');
+                const authData = await authResponse.json();
+                
+                if (authData.authenticated) {
+                    const channelResponse = await fetch('/get-channel-info');
+                    const channelData = await channelResponse.json();
+                    
+                    if (channelData.authenticated && channelData.channel) {
+                        updateChannelInfo(channelData.channel);
+                        showDashboard();
+                    } else {
+                        showLoginPanel();
+                    }
+                } else {
+                    showLoginPanel();
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                showLoginPanel();
+                showAlert('Error checking authentication status. Please try again.', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        function updateChannelInfo(channel) {
+            document.getElementById('channelName').textContent = channel.title;
+            document.getElementById('channelAvatar').src = channel.thumbnail || 'https://via.placeholder.com/56';
+            document.getElementById('subscriberCount').textContent = formatNumber(channel.subscriberCount);
+            document.getElementById('videoCount').textContent = formatNumber(channel.videoCount);
+            document.getElementById('uploadChannelName').textContent = channel.title;
+            
+            document.getElementById('channelInfo').classList.add('active');
+            document.getElementById('logoutBtn').style.display = 'flex';
+        }
+        
+        async function authenticate() {
+            showLoader('Connecting to YouTube...');
+            
+            try {
+                const response = await fetch('/authenticate', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const data = await response.json();
+                
+                if (data.success) {
+                    checkAuthenticationStatus();
+                    showAlert('Successfully connected to YouTube!', 'success');
+                } else {
+                    showAlert(data.error || 'Connection failed. Please try again.', 'error');
+                    showLoginPanel();
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                showAlert('Connection error. Please try again.', 'error');
+                showLoginPanel();
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        async function logout() {
+            showLoader('Disconnecting...');
+            
+            try {
+                const response = await fetch('/logout', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Successfully disconnected.', 'success');
+                    showLoginPanel();
+                } else {
+                    showAlert(data.error || 'Logout failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAlert('Logout error. Please try again.', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        // Content actions
+        async function generatePreview() {
+            const url = document.getElementById('reelUrl').value.trim();
+            if (!url) {
+                showAlert('Please enter a valid Instagram URL', 'error');
+                return;
+            }
+
+            showLoader('Generating AI preview...');
+
+            try {
+                const response = await fetch('/generate-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                hideLoader();
+
+                if (data.success) {
+                    showPreviewResult(data);
+                } else {
+                    showAlert(data.error || 'Failed to generate preview', 'error');
+                }
+            } catch (error) {
+                hideLoader();
+                showAlert('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function downloadOnly() {
+            const url = document.getElementById('reelUrl').value.trim();
+            if (!url) {
+                showAlert('Please enter a valid Instagram URL', 'error');
+                return;
+            }
+
+            showLoader('Downloading content...');
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                hideLoader();
+
+                if (data.success) {
+                    showDownloadResult(data);
+                } else {
+                    showAlert(data.error || 'Download failed', 'error');
+                }
+            } catch (error) {
+                hideLoader();
+                showAlert('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function autoUploadBackground() {
+            const url = document.getElementById('reelUrl').value.trim();
+            if (!url) {
+                showAlert('Please enter a valid Instagram URL', 'error');
+                return;
+            }
+
+            showLoader('Starting upload process...');
+
+            try {
+                const response = await fetch('/auto-upload-async', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                hideLoader();
+
+                if (data.success) {
+                    currentTaskId = data.task_id;
+                    showProgressSection();
+                    startProgressTracking();
+                    clearResultContainer();
+                } else {
+                    if (response.status === 401) {
+                        showAlert('Please connect your YouTube channel first.', 'error');
+                    } else {
+                        showAlert(data.error || 'Failed to start upload process', 'error');
+                    }
+                }
+            } catch (error) {
+                hideLoader();
+                showAlert('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Progress tracking
+        function startProgressTracking() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            
+            statusCheckInterval = setInterval(checkTaskStatus, 2000);
+        }
+
+        async function checkTaskStatus() {
+            if (!currentTaskId) return;
+            
+            try {
+                const response = await fetch(`/task-status/${currentTaskId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateProgress(data.task);
+                    
+                    if (data.task.status === 'completed' || data.task.status === 'failed') {
+                        clearInterval(statusCheckInterval);
+                        
+                        if (data.task.status === 'completed') {
+                            showFinalSuccess(data.task);
+                            addToHistory(data.task);
+                        } else {
+                            showAlert(data.task.error || 'Upload failed', 'error');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking task status:', error);
+            }
+        }
+
+        function updateProgress(task) {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            
+            const statusMap = {
+                'started': { progress: 10 },
+                'downloading': { progress: 30 },
+                'generating_metadata': { progress: 60 },
+                'uploading': { progress: 80 },
+                'completed': { progress: 100 }
+            };
+            
+            const progress = statusMap[task.status]?.progress || 0;
+            
+            progressBar.style.width = `${progress}%`;
+            progressPercentage.textContent = `${progress}%`;
+            
+            // Update step states
+            const allSteps = ['started', 'downloading', 'generating_metadata', 'uploading', 'completed'];
+            const currentIndex = allSteps.indexOf(task.status);
+            
+            allSteps.forEach((step, index) => {
+                const stepElement = document.getElementById(`step-${step}`);
+                stepElement.classList.remove('active', 'completed');
+                
+                if (index < currentIndex) {
+                    stepElement.classList.add('completed');
+                } else if (index === currentIndex) {
+                    stepElement.classList.add('active');
+                }
+            });
+        }
+        
+        // UI Helpers
+        function showLoader(message) {
+            document.getElementById('loaderText').textContent = message || 'Processing...';
+            document.getElementById('loader').style.display = 'flex';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+        
+        function showAlert(message, type = 'success') {
+            const alertsContainer = document.getElementById('alerts');
+            const alert = document.createElement('div');
+            
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            alertsContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.style.animation = 'slideInRight 0.5s ease reverse';
+                    setTimeout(() => {
+                        alertsContainer.removeChild(alert);
+                    }, 500);
+                }
+            }, 5000);
+        }
+        
+        function showProgressSection() {
+            document.getElementById('progressSection').style.display = 'block';
+        }
+        
+        function showLoginPanel() {
+            hideAllPanels();
+            document.getElementById('loginPanel').classList.add('active');
+            document.getElementById('channelInfo').classList.remove('active');
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+        
+        function showDashboard() {
+            document.getElementById('loginPanel').classList.remove('active');
+            showPanel('uploadPanel');
+        }
+        
+        function showPanel(panelId) {
+            hideAllPanels();
+            document.getElementById(panelId).style.display = 'block';
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('onclick')?.includes(panelId)) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        function hideAllPanels() {
+            document.querySelectorAll('.content-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+        }
+        
+        function clearResultContainer() {
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+        
+        // Result Display Functions
+        function showPreviewResult(data) {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-icon" style="background: var(--gradient-secondary);">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h3 class="result-title">AI Content Preview</h3>
+                    </div>
+                    
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <div class="metadata-label">Generated Title</div>
+                            <div class="metadata-value">${data.title}</div>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <div class="metadata-label">Description</div>
+                            <div class="metadata-value" style="max-height: 150px; overflow-y: auto;">${data.description}</div>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <div class="metadata-label">Tags</div>
+                            <div class="tags-container">
+                                ${data.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <div class="metadata-label">Hashtags</div>
+                            <div class="tags-container">
+                                ${data.hashtags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 24px; text-align: right;">
+                        <button class="btn btn-primary" onclick="autoUploadBackground()">
+                            <i class="fas fa-rocket"></i>
+                            <span>Upload with this content</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showDownloadResult(data) {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <h3 class="result-title">Download Complete</h3>
+                    </div>
+                    
+                    <div class="metadata-item">
+                        <div class="metadata-label">File Information</div>
+                        <div class="metadata-value">
+                            <strong>Filename:</strong> ${data.filename}
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <a href="/get-video/${data.filename}" download class="btn btn-primary">
+                                <i class="fas fa-download"></i>
+                                <span>Download File</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showFinalSuccess(task) {
+            const metadata = task.metadata || {};
+            const resultContainer = document.getElementById('resultContainer');
+            
+            resultContainer.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <h3 class="result-title">Upload Successful!</h3>
+                    </div>
+                    
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <div class="metadata-label">YouTube Video</div>
+                            <div class="metadata-value">
+                                <strong>URL:</strong> <a href="${task.youtube_url}" target="_blank" style="color: var(--primary);">${task.youtube_url}</a>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <a href="${task.youtube_url}" target="_blank" class="btn btn-primary">
+                                    <i class="fab fa-youtube"></i>
+                                    <span>Watch on YouTube</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <div class="metadata-label">AI Generated Title</div>
+                            <div class="metadata-value">${metadata.title || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="metadata-item">
+                            <div class="metadata-label">Tags</div>
+                            <div class="tags-container">
+                                ${(metadata.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // History Management
+        function addToHistory(task) {
+            const metadata = task.metadata || {};
+            
+            const historyEntry = {
+                id: task.id,
+                date: new Date().toISOString(),
+                title: metadata.title || 'Untitled Video',
+                youtubeUrl: task.youtube_url,
+                thumbnail: ''
+            };
+            
+            uploadHistory.unshift(historyEntry);
+            
+            if (uploadHistory.length > 10) {
+                uploadHistory = uploadHistory.slice(0, 10);
+            }
+            
+            localStorage.setItem('uploadHistory', JSON.stringify(uploadHistory));
+            
+            if (document.getElementById('historyPanel').style.display !== 'none') {
+                renderUploadHistory();
+            }
+        }
+        
+        function renderUploadHistory() {
+            const historyContainer = document.getElementById('historyItems');
+            
+            if (uploadHistory.length === 0) {
+                historyContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fas fa-history" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>No upload history yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const historyHTML = uploadHistory.map(item => `
+                <div class="metadata-item" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin-bottom: 4px; color: var(--text-primary);">${item.title}</h4>
+                        <p style="font-size: 12px; color: var(--text-muted);">${new Date(item.date).toLocaleString()}</p>
+                    </div>
+                    <a href="${item.youtubeUrl}" target="_blank" class="btn btn-secondary" style="padding: 8px 16px;">
+                        <i class="fab fa-youtube"></i>
+                        <span>Watch</span>
+                    </a>
+                </div>
+            `).join('');
+            
+            historyContainer.innerHTML = historyHTML;
+        }
+        
+        // Settings management
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('youtubeSettings') || '{}');
+            
+            if (settings.defaultPrivacy) {
+                document.getElementById('defaultPrivacy').value = settings.defaultPrivacy;
+            }
+            
+            if (settings.defaultCategory) {
+                document.getElementById('defaultCategory').value = settings.defaultCategory;
+            }
+            
+            if (settings.aiCustomization) {
+                document.getElementById('aiCustomization').value = settings.aiCustomization;
+            }
+        }
+        
+        function saveSettings() {
+            const settings = {
+                defaultPrivacy: document.getElementById('defaultPrivacy').value,
+                defaultCategory: document.getElementById('defaultCategory').value,
+                aiCustomization: document.getElementById('aiCustomization').value
+            };
+            
+            localStorage.setItem('youtubeSettings', JSON.stringify(settings));
+            showAlert('Settings saved successfully', 'success');
+        }
+        
+        // Utilities
+        function formatNumber(numStr) {  
+            const num = parseInt(numStr, 10);
+            if (isNaN(num)) return '0';
+            
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            } else {
+                return num.toString();
+            }
+        }
+    </script>
+</body>
+</html>
